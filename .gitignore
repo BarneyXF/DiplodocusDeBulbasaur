@@ -27,7 +27,7 @@
 
 ## Build tool auxiliary files:
 *.fdb_latexmk
-*.synctex
+*.synctex*
 *.synctex.gz
 *.synctex.gz(busy)
 *.pdfsync
@@ -136,3 +136,5 @@ sympy-plots-for-*.tex/
 *.bak
 *.sav
 
+# VS Code settings
+# .vscode

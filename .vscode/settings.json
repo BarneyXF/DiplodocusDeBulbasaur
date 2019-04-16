@@ -1,0 +1,24 @@
+{
+	"latex-workshop.latex.bibDirs": [
+		"./bib"
+	],
+	"latex-workshop.latex.texDirs": [
+		"./src",
+		"./include"
+	],
+	"latex-workshop.latex.search.rootFiles.include": [
+		"./**/*.tex"
+	],
+	"latex-workshop.latex.outDir": "%DIR%/out/",
+	"latex-workshop.chktex.enabled": true,
+	"latex-workshop.chktex.run": "onType",
+	"latex-workshop.chktex.args.root": [
+		"-wall",
+		"-n22",
+		"-n30",
+		"-e16",
+		"-q",
+		"%DIR%"
+	],
+	"latex-workshop.synctex.afterBuild.enabled": true,
+}
