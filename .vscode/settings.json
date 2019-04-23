@@ -7,7 +7,8 @@
 		"./include"
 	],
 	"latex-workshop.latex.search.rootFiles.include": [
-		"./**/*.tex"
+		"**/*.tex",
+		"*.tex"
 	],
 	"latex-workshop.latex.outDir": "%DIR%/out/",
 	"latex-workshop.chktex.enabled": true,
@@ -21,4 +22,8 @@
 		"%DIR%"
 	],
 	"latex-workshop.synctex.afterBuild.enabled": true,
+	"terminal.integrated.shell.windows": "cmd.exe",
+	"latex-workshop.latex.autoBuild.run": "onFileChange",
+	"latex-workshop.latex.autoBuild.cleanAndRetry.enabled": true,
+	"cSpell.language": ",ru,en-GB,en"
 }
