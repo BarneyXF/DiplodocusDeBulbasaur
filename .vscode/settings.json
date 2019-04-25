@@ -11,7 +11,6 @@
 		"*.tex"
 	],
 	"latex-workshop.latex.outDir": "%DIR%/out/",
-	"latex-workshop.chktex.enabled": true,
 	"latex-workshop.chktex.run": "onType",
 	"latex-workshop.chktex.args.root": [
 		"-wall",
@@ -25,5 +24,11 @@
 	"terminal.integrated.shell.windows": "cmd.exe",
 	"latex-workshop.latex.autoBuild.run": "onFileChange",
 	"latex-workshop.latex.autoBuild.cleanAndRetry.enabled": true,
-	"cSpell.language": ",ru,en-GB,en"
+	"cSpell.language": ",ru,en-GB,en",
+	"search.usePCRE2": true,
+	"editor.rulers": [
+		80,
+		120
+	],
+	"latex-workshop.latex.option.maxPrintLine.enabled": false
 }

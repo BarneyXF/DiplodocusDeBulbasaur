@@ -2,16 +2,16 @@
 
 % Настройки стиля ГОСТ 7-32
 % Для начала определяем, хотим мы или нет, чтобы рисунки и таблицы нумеровались в пределах раздела, или нам нужна сквозная нумерация.
-\EqInChapter % формулы будут нумероваться в пределах раздела
-\TableInChapter % таблицы будут нумероваться в пределах раздела
-\PicInChapter % рисунки будут нумероваться в пределах раздела
+\EqInChapter{}% формулы будут нумероваться в пределах раздела
+\TableInChapter{}% таблицы будут нумероваться в пределах раздела
+\PicInChapter{}% рисунки будут нумероваться в пределах раздела
 
 \usepackage{pscyr} 
 \usepackage{float}
 \usepackage{ulem}
 \usepackage{xcolor}
 \usepackage[textwidth=70, textsize=footnotesize]{todonotes}
-\reversemarginpar
+\reversemarginpar{}
 
 % Добавляем гипертекстовое оглавление в PDF
 \usepackage[
@@ -20,13 +20,13 @@ urlcolor=black,linkcolor=black, anchorcolor=black,
 citecolor=black, menucolor=black, filecolor=black,
 ]{hyperref}
 
-\AfterHyperrefFix
+\AfterHyperrefFix{}
 
 \usepackage{microtype}% полезный пакет для микротипографии, увы под xelatex мало чего умеет, но под pdflatex хорошо улучшает читаемость
 
 % Тире могут быть невидимы в Adobe Reader
-\ifInvisibleDashes
-\MakeDashesBold
+\ifInvisibleDashes{}
+\MakeDashesBold{}
 \fi
 
 \usepackage{graphicx}   % Пакет для включения рисунков
