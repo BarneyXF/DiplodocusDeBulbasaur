@@ -6,7 +6,9 @@
 \usepackage{cite}
 
 \begin{document}
-
+\makeatletter
+\newcommand{\mylabel}[2]{#2\def\@currentlabel{#2}\label{#1}}
+\makeatother
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % НАЧАЛО ТЕКСТА
 
