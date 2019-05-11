@@ -27,8 +27,8 @@
 	"cSpell.language": ",ru,en-GB,en",
 	"search.usePCRE2": true,
 	"editor.rulers": [
-		// 80,
-		120
+		80,
+		// 120
 	],
 	"latex-workshop.latex.option.maxPrintLine.enabled": false
 }
