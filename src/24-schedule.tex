@@ -5,11 +5,11 @@
 
 \indent Для отображения логического времени на физическое был предложен итеративный процесс, который осуществляет 'переход' к необходимому времени путем последовательного перебора дат.
 
-\begin{figure}[h]
+\begin{figure}[ht]	
+	\centering	
 	\includegraphics[width=\linewidth]{pics/scheduleAxes.png}
 	\caption{Пример отображения оси логического на ось физического времени}
 	\label{fig:axes}
-	\centering
 \end{figure}
 
 \indent Как было сказано ранее, из-за того что рабочее время является дискретным, мы не имеем возможности просуммировать начальную дату и значение поданного логического времени.
@@ -50,23 +50,25 @@
 	\item проверка времени - задается дата и логическое время равное нулю, что запускает оба предыдущих расчета пока не будет найдено первое ненулевое время в обоих направлениях от даты начала расчета(см \ref{fig:checkCalc}).
 \end{itemize}
 
-\begin{figure}[h]
+\begin{figure}[ht!]
+	\centering
 	\includegraphics[width=\linewidth]{pics/scheduleStraightCalc.png}
 	\caption{Схема прямого расчета}
 	\label{fig:straightCalc}
+\end{figure}
+
+\begin{figure}[ht!]
 	\centering
-% \end{figure}
-% \begin{figure}[h]
 	\includegraphics[width=\linewidth]{pics/scheduleReverceCalc.png}
 	\caption{Схема обратного расчета}
 	\label{fig:reverceCalc}
+\end{figure}
+
+\begin{figure}[ht!]
 	\centering
-% \end{figure}
-% \begin{figure}[h]
 	\includegraphics[width=\linewidth]{pics/scheduleCheckCalc.png}
 	\caption{Схема проверки времени}
 	\label{fig:checkCalc}
-	\centering
 \end{figure}
 
 \indent Выбрав режим работы сбрасывается счетчик текущего логического времени до нуля и счетчик текущего физического времени до стартовой даты. Затем итеративно, пока текущее логическое время не превысит необходимое производится поиск следующей даты.
@@ -85,11 +87,11 @@
 	\item[\mylabel{itm:point3}{3})] разность текущего и необходимого логического времён вычитается из физического времени, при этом сохраняя данное значение как левую (правую при обратном расчете) границу и продолжается расчет для выявления правой (левой) границы промежутка.
 \end{enumerate}
 
-\begin{figure}[h]
+\begin{figure}[ht]
+	\centering
 	\includegraphics[width=\linewidth]{pics/scheduleSchema.png}
 	\caption{Блок-схема модуля}
 	\label{fig:schema}
-	\centering
 \end{figure}
 
 \indent Определение интервалов рабочего времени происходит взятием даты из текущего физического времени, после чего начинается определение принадлежности данной даты к перенесенным датам после чего есть два варианта развития ситуации:
@@ -99,18 +101,18 @@
 	\item дата не является перенесенным днем и получение информации происходит исходя из того, каким днем недели является данная дата.
 \end{itemize}
 
-\begin{figure}[h]
+\begin{figure}[ht]
+	\centering
 	\includegraphics[width=\linewidth]{pics/scheduleIntervals.png}
 	\caption{Смещение интервалов рабочего времени относительно рабочего дня}
 	\label{fig:intervals}
-	\centering
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[ht]
+	\centering
 	\includegraphics[width=\linewidth]{pics/scheduleTime.png}
 	\caption{Граница двух дней}
 	\label{fig:time}
-	\centering
 \end{figure}
 
 \indent Так как на реальных производственных площадках нередко случается так, что рабочие интервалы, принадлежащие к рабочему дню и сам рабочий день смещены относительно друг друга (см. \ref{fig:intervals}).
@@ -121,10 +123,10 @@
 Но, в связи с тем, что данная недетерминированность присутствует лишь при рассмотрении человеком данной ситуации, а система может распознавать диапазон от 0 до 86399 секунд, то для определения интервалов рабочего графика (при обратном расчете) используется именно величина в 86399 секунд, при условии, что данное допущение не влияет на расчет, как последняя секунда текущего дня.
 
 \begin{figure}[ht]
+	\centering
 	\includegraphics[scale=0.6]{pics/scheduleConfigExample.png}
 	\caption{Пример конфигурации модуля}
 	\label{fig:config}
-	\centering
 \end{figure}
 
 \indent Возвращаясь к пункту \ref{itm:point3} алгоритма, при нахождении нужного времени, работа модуля не прекращается, а ведется до момента нахождения второй границы промежутка, на который отображается необходимое логической время.
@@ -133,10 +135,10 @@
 Эта пара чисел, характеризующие начало и конец отрезка которые отображаются на логическую ось в точке, значение которой равно входному логическому времени и являются выходными данными данного модуля.
 
 \begin{figure}[ht]
+	\centering
 	\includegraphics[scale=0.6]{pics/scheduleEvalExample.png}
 	\caption{Пример прямого расчета модулем}
 	\label{fig:eval1}
-	\centering
 \end{figure}
 
 \indent В результате работы над модулем были написаны тесты и проведено тестирование, результаты одного из которых можно увидеть на изображениях \ref{fig:config} и \ref{fig:eval1}.
@@ -145,20 +147,20 @@
 Рисунок \ref{fig:eval1} показывает итеративный процесс как результат прибавления каждого нового интервала к текущему времени.
 
 \begin{figure}[ht]
+	\centering
 	\includegraphics[scale=0.6]{pics/scheduleRevertEvalExample.png}
 	\caption{Пример обратного расчета модулем}
 	\label{fig:revEval}
-	\centering
 \end{figure}
 
 \indent Также были проведены тесты обратного расчета и проверки времени, результаты которых можно видеть на изображениях \ref{fig:revEval} и \ref{fig:checkEval}.
 Пояснение к проверке даты: тут используется конфигурация, когда 2 января является выходным, проверка которой и производится, что позволяет продемонстрировать работу данного решения.
 
 \begin{figure}[hb]
+	\centering
 	\includegraphics[scale=0.6]{pics/scheduleCheckDateEval.png}
 	\caption{Пример проверки модулем времени}
 	\label{fig:checkEval}
-	\centering
 \end{figure}
 
 
