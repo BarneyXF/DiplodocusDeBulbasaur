@@ -15,9 +15,8 @@
 \indent Кортеж - упорядоченный набор из N элементов, где N - это число атрибутов отношения.
 Иначе говоря, кортеж - это строка или запись таблицы.\\
 \indent Отношение - множество упорядоченных N-кортежей.
-Другими словами отношение - это двумерная (плоская) таблица, состоящая из столбцов и строк - атрибутов и кортежей (см. \ref{fig:dbExample}).\\
-\indent Также вводится понятие целостности по ссылкам - 
-\todo{добавить определение внешнего ключа и целостности по ссылкам}
+Другими словами отношение - это двумерная (плоская) таблица, состоящая из столбцов и строк - атрибутов и кортежей (см. рисунок \ref{fig:dbExample}).\\
+\indent Также необходимо ввести понятие целостности по ссылкам заключающееся в отсутствии в любом её отношении внешних ключей (атрибут, указывающий на атрибут в другом отношении и совпадающий с ним по значению), ссылающихся на несуществующие кортежи.
 
 \section{Обоснование}
 \indent Пусть заданы два отношения $R_1$ и $R_2$, такие что:
@@ -28,23 +27,36 @@
 \end{multline*}
 % \end{center}
 
-\indent $FK(R, a)$ - внешний ключ, ссылающийся на атрибут $a$ на отношения $R$, тогда:
+\indent $FK(R, a)$ - внешний ключ, ссылающийся на атрибут $a$ на отношения $R$, тогда:\\
 \todo{выровнять}
-\begin{multline*}
-	\forall name \in R_1.name : \forall v_1 \in R_1.version v_2 \in R_1.version: v_1 \neq v_2 : \\
-		S_{v_1} = \sigma_{name, v}(R_1 \bowtie_{name = R_2.name, v_1 \leq R_2.version}R_2) \\
-		S_{v_2} = \sigma_{name = name, F_{MAX(version)} = v}(R_1 \bowtie_{name = R_2.name, v_2 \leq R_2.version}R_2) \\
-		S_{v_1} \cap S_{v_2} = ???
-\end{multline*}
+% \begin{equation*}
+% 	\forall name \in R_1.name : \forall v_1 \in R_1.version v_2 \in R_1.version: v_1 \neq v_2 :
+% \end{equation*}
+% \begin{equation}
+% 	f:: R_1 \overrightarrow{\bowtie} R_2 \rightarrow R_1\overrightarrow{\bowtie} R_2 \rightarrow R_1 \overrightarrow{\bowtie} R_2
+% \end{equation}
 
-\todo[inline]{Доказать и можно вводить оператор}
 
-\begin{equation}
-	\label{eq:versJoin}
+\begin{equation}\label{eq:versJoin}
 	R_1\overrightarrow{\bowtie} R_2 \Leftrightarrow \pi_{*, F_{MAX(R_1.version)}}(\sigma_{R_1.version \leq R_2.version}(R_1 \bowtie_{R_1.name = R_2.name}R_2))
 \end{equation}
 
 \indent Формула \ref{eq:versJoin} отражает эквивалентность ``версионного пересечение'' (слева) и реляционного выражения справа.
 Под знаком ``*'' понимается проекция всех атрибутов из полученного отношения.
+Также введем два обозначения:
+\begin{multline}
+	R \leftarrow R_1 \overrightarrow{\bowtie} R_2,\\
+	R' \leftarrow (R'_1 \overrightarrow{\bowtie} R'_2)
+\end{multline}
+
+\begin{theorem}
+	Любая выборка ($\sigma_\phi$) из пересечения $R$ и $R'$ будет включать в себя выборку по тому же условию из $R$ 
+\end{theorem}
+\todo{вроде по записям, но хрень какая-то получилась}
+\begin{equation}
+	\forall\ \phi\ :\ \sigma_\phi(R) \subset (\sigma_\phi(R) \cap \sigma_\phi(R'))
+\end{equation}
+\todo[inline]{Доказать}
+
 
 \todo[inline]{монотонность версий}
