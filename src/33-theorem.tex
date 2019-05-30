@@ -1,0 +1,92 @@
+\section{Обоснование}
+\indent Пусть заданы два отношения $R_1$ и $R_2$, такие что:
+\begin{eqnarray*}
+	R_1 & = & <name, version, ...> \\
+	R_2 & = & <FK(R_1, name), version, ...>
+\end{eqnarray*}
+\indent $FK(R, a)$ - внешний ключ, ссылающийся на атрибут $a$ на отношения $R$, тогда введем оператор ``версионного соединения'', который будет отражать взаимосвязь двух отношений:
+\begin{multline}
+	\label{eq:versJoin}
+	% R_1\ \overrightarrow{\bowtie}\ R_2\ \Leftrightarrow\ \pi_{*, F_{MAX(R_1.version)}}(\sigma_{R_1.version \leq R_2.version}(R_1\ \bowtie_{R_1.name = R_2.name}\ R_2))
+	\forall R_1,\ R_2\ :\ R_1.name\ \supset\ R_2.name,\ R_1.version\ \leq\ R_2.version\ :\\
+	R_1,\ R_2 \Rightarrow R_1\ \overrightarrow{\bowtie}\ R_2\
+\end{multline}
+\indent Формула \ref{eq:versJoin} отражает эквивалентность ``версионного соединения'' и связанных по условию отношений $R_1$ и $R_2$.
+То есть для версионного соединения должны выполняться два условия:
+\begin{itemize}
+	\item внешний ключ $R_2.name$ второго отношения существует в домене $R_1.name$;
+	\item версия указанная во втором отношении не меньше версии указанной в первом.
+\end{itemize}
+
+\indent При их соблюдении возможно применять свойство следующее из определения версионного соединения:
+\begin{equation}
+	\forall\ f : f(R_1\ \overrightarrow{\bowtie}\ R_2,\ R_1'\ \overrightarrow{\bowtie}\ R_2') \Leftrightarrow
+	f(R_1,\ R_1')\ \overrightarrow{\bowtie}\ f(R_2,\ R_2')
+\end{equation}
+\indent Другое свойство версионного соединения: 
+\begin{multline}
+	\label{eq:prop2}
+	\forall R, R', R_1', R_2', f : R \varsubsetneq f(R, R'), R_1\ \overrightarrow{\bowtie}\ R_2, R_2'.name \subset R_1.name :\\
+	\left.
+	\begin{array}{ccc}
+		f(R_1, R_1') \Rightarrow \bot \\
+		f(R_2, R_2') \Rightarrow R_2'' \\
+		f(R_1, R_1'), f(R_2, R_2') \Rightarrow R_1'', R_2''
+	\end{array} 
+	\right\} \Rightarrow
+	\left.
+	\begin{array}{ccc}
+		\bot \\
+		R_1\ \overrightarrow{\bowtie}\ R_2''\\
+		R_1''\ \overrightarrow{\bowtie}\ R_2''
+	\end{array}
+	\right.
+\end{multline}
+\todo{как это адекватно записать?}
+\indent В выражении \ref{eq:prop2} показано свойство, что изменение множества кортежей отношения $R_1$ функцией $f(R, R')$ недопустимо, при том что либо только $R_2$ либо и то и другое отношение одновременно могут быть изменены при соблюдении условий версионного соединения.\\
+\indent Оператор версионного соединения ($\overrightarrow{\bowtie}$) не следует понимать как обычное пересечение ($\bowtie$), потому как он лишь отражает взаимосвязь двух отношений не соединяя их в одно.
+
+\begin{theorem}
+	Любая выборка ($\sigma_\phi$) из отношения полученного путем объединения двух версионных соединений $R$ и $R'$ будет включать в себя выборку по тому же условию из $R$.
+\end{theorem}
+\begin{eqnarray}
+	&R\ & \leftarrow (R_1\ \overrightarrow{\bowtie}\ R_2),\ 
+	R'\ \leftarrow (R'_1\ \overrightarrow{\bowtie}\ R'_2)\\
+	&f:: & R_1 \overrightarrow{\bowtie}\ R_2 \rightarrow R_1\ \overrightarrow{\bowtie}\ R_2 \rightarrow R_1\ \overrightarrow{\bowtie}\ R_2 \\
+	&\forall\ & R,\ R', f : R\ \subsetneq\ f (R,\ R') \\
+	&\forall\ & \phi,\ R,\ R' :\ \sigma_\phi(R) \subset \sigma_\phi(f(R,\ R'))
+	\label{eq:th}
+\end{eqnarray}
+
+\indent Если предположить, что теорема \ref{eq:th} неверна, тогда объединение $R$ и $R'$ не включают в себя $R$ для любого условия $\phi$:
+\todo{декомпозировать}
+\begin{eqnarray}
+	&R& \not\subset\ f(R,\ R') \\
+	&R& \not\subset\ R\ \cup\ R' \\
+	&R& \not\subset\ (R_1\ \overrightarrow{\bowtie}\ R_2)\ \cup\ (R_1'\ \overrightarrow{\bowtie}\ R_2') \\
+	&R_1& \overrightarrow{\bowtie}\ R_2 \not\subset (R_1\ \cup\ R_2)\ \overrightarrow{\bowtie}\ (R_1'\ \cup\ R_2')\label{eq:wrong} \\
+\end{eqnarray}
+\indent Так как множества могут быть в том числе и пустыми, приравняем $R_1'$ и $R_2'$ пустому множеству:
+\begin{equation}
+	\label{eq:proof}
+	\left.
+		\begin{array}{ccc}
+			&R_1'\ & =\ \varnothing \\
+			&R_2'\ & =\ \varnothing \\
+		\end{array}
+	\right\} \Rightarrow
+	R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset R_1\ \overrightarrow{\bowtie}\ R_2
+\end{equation}
+\indent Из выражения \ref{eq:proof} видно, что в результате получается, что версионное соединение множеств не входит само в себя, что неверно.
+Из этого следует что изначальное предположение оказалось неверным, а следовательно теорема \ref{eq:th} доказана.
+
+% \begin{equation*}
+	% 	\forall name \in R_1.name : \forall v_1 \in R_1.version v_2 \in R_1.version: v_1 \neq v_2 :
+% \end{equation*}
+% \begin{equation}
+		
+% \end{equation}
+
+\todo[inline]{Доказать}
+\todo[inline]{монотонность версий}
+\todo[inline]{оформить свойства и определение}
