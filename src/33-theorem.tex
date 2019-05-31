@@ -4,7 +4,7 @@
 	R_1 & = & <name, version, ...> \\
 	R_2 & = & <FK(R_1, name), version, ...>
 \end{eqnarray*}
-\indent $FK(R, a)$ - внешний ключ, ссылающийся на атрибут $a$ на отношения $R$, тогда введем оператор ``версионного соединения'', который будет отражать взаимосвязь двух отношений:
+\indent $FK(R, a)$ -- внешний ключ, ссылающийся на атрибут $a$ на отношения $R$, тогда введем оператор ``версионного соединения'', который будет отражать взаимосвязь двух отношений:
 \begin{multline}
 	\label{eq:versJoin}
 	% R_1\ \overrightarrow{\bowtie}\ R_2\ \Leftrightarrow\ \pi_{*, F_{MAX(R_1.version)}}(\sigma_{R_1.version \leq R_2.version}(R_1\ \bowtie_{R_1.name = R_2.name}\ R_2))
