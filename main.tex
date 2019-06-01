@@ -2,14 +2,19 @@
 \include{preamble.inc}
 \include{listings.inc}
 \include{macros.inc}
+
 \usepackage[russian, english]{babel}
 \usepackage{cite}
 \usepackage{amsfonts}
 \usepackage{amsthm}
+
 \newtheorem{theorem}{Теорема}
 \newtheorem{prop}{Свойство}
+\newtheorem{definition}{Определение}
 % \newtheorem{state}{Утверждение}
+
 \bibliographystyle{utf8gost705u}
+
 \setcounter{page}{4}
 
 \begin{document}
@@ -32,5 +37,6 @@
 
 \backmatter{}
 \bibliography{bib/bibl}{}
+\include{src/50-apps}
 
 \end{document}

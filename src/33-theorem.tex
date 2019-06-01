@@ -1,72 +1,82 @@
-\section{Формализация требуемых свойств}
+\section{Формализация свойств базы данных}\label{sec:theorem}
 \indent Пусть заданы два отношения $R_1$ и $R_2$, такие что:
 \begin{eqnarray*}
 	R_1 & = & <name, version, ...> \\
 	R_2 & = & <FK(R_1, name), version, ...>
 \end{eqnarray*}
-\indent $FK(R, a)$ -- внешний ключ, ссылающийся на атрибут $a$ на отношения $R$, тогда введем оператор ``версионного соединения'', который будет отражать взаимосвязь двух отношений:
-\begin{multline}
-	\label{eq:versJoin}
-	% R_1\ \overrightarrow{\bowtie}\ R_2\ \Leftrightarrow\ \pi_{*, F_{MAX(R_1.version)}}(\sigma_{R_1.version \leq R_2.version}(R_1\ \bowtie_{R_1.name = R_2.name}\ R_2))
-	\forall R_1,\ R_2\ :\ R_1.name\ \supset\ R_2.name,\ R_1.version\ \leq\ R_2.version\ :\\
-	R_1,\ R_2 \Rightarrow R_1\ \overrightarrow{\bowtie}\ R_2\
-\end{multline}
-\indent Формула \ref{eq:versJoin} отражает эквивалентность ``версионного соединения'' и связанных по условию отношений $R_1$ и $R_2$.
-То есть для версионного соединения должны выполняться два условия:
-\begin{itemize}
-	\item внешний ключ $R_2.name$ второго отношения существует в домене $R_1.name$;
-	\item версия указанная во втором отношении не меньше версии указанной в первом.
-\end{itemize}
-
-\indent При их соблюдении возможно применять свойство следующее из определения версионного соединения:
+\indent $FK(R, a)$ -- внешний ключ, ссылающийся на атрибут $a$ на отношения $R$.\\
+\indent Также для атрибута $version$ данных отношений задано условие монотонного возрастания:
 \begin{equation}
-	\forall\ f : f(R_1\ \overrightarrow{\bowtie}\ R_2,\ R_1'\ \overrightarrow{\bowtie}\ R_2') \Leftrightarrow
-	f(R_1,\ R_1')\ \overrightarrow{\bowtie}\ f(R_2,\ R_2')
+	\forall t_1 \in \mathbb{Z}, t_2 \in \mathbb{Z}, f: M \in \mathbb{R} \rightarrow \mathbb{R} : t_2 > t_1 \Rightarrow f(t_2) > f(t_1)
 \end{equation}
-\indent Другое свойство версионного соединения: 
-\begin{multline}
-	\label{eq:prop2}
-	\forall R, R', R_1', R_2', f : R \varsubsetneq f(R, R'), R_1\ \overrightarrow{\bowtie}\ R_2, R_2'.name \subset R_1.name :\\
-	\left.
-	\begin{array}{ccc}
-		f(R_1, R_1') \Rightarrow \bot \\
-		f(R_2, R_2') \Rightarrow R_2'' \\
-		f(R_1, R_1'), f(R_2, R_2') \Rightarrow R_1'', R_2''
-	\end{array} 
-	\right\} \Rightarrow
-	\left.
-	\begin{array}{ccc}
-		\bot \\
-		R_1\ \overrightarrow{\bowtie}\ R_2''\\
-		R_1''\ \overrightarrow{\bowtie}\ R_2''
-	\end{array}
-	\right.
-\end{multline}
-\todo{как это адекватно записать?}
-\indent В выражении \ref{eq:prop2} показано свойство, что изменение множества кортежей отношения $R_1$ функцией $f(R, R')$ недопустимо, при том что либо только $R_2$ либо и то и другое отношение одновременно могут быть изменены при соблюдении условий версионного соединения.\\
-\indent Оператор версионного соединения ($\overrightarrow{\bowtie}$) не следует понимать как обычное пересечение ($\bowtie$), потому как он лишь отражает взаимосвязь двух отношений не соединяя их в одно.
+
+\begin{definition}
+	\label{def:join}
+	Версионное соединение - это такое соединение двух отношений $R_1$ и $R_2$, для которых справедливо:\todo{условие максимальности наверное не нужно}
+	\begin{multline}
+		\label{eq:versJoin}
+		\forall R_1,\ R_2\ :\ R_1.name\ \supset\ R_2.name:\\
+		R_1\ \overrightarrow{\bowtie}\ R_2\ \Leftrightarrow\ \pi_{*, F_{MAX(R_1.version)}}(\sigma_{R_1.version \leq R_2.version}(R_1\ \bowtie_{R_1.name = R_2.name}\ R_2))
+		% R_1,\ R_2 \Rightarrow R_1\ \overrightarrow{\bowtie}\ R_2\
+	\end{multline}
+\end{definition}
+
+\todo{пофиксить выравнивание}
+\begin{definition}
+	\label{def:union}
+	Пересечение двух версионных соединений $R_1$ и $R_2$ осуществляется по следующему правилу:
+	\begin{equation*}
+		\overrightarrow{\cup} ::\ R\overrightarrow{\bowtie}R' \rightarrow R\overrightarrow{\bowtie}R' \rightarrow R\overrightarrow{\bowtie}R'
+	\end{equation*}
+	\begin{multline}
+		\forall R_1,R_2,R_1',R_2': R_2'.name \subset (R_1.name \cup R_1'.name),\\
+		R_1.version \leq R_2'.version, R_1'.version > R_2.version:
+	\end{multline}
+	\begin{equation}
+		(R_1\overrightarrow{\bowtie}\ R_2) \overrightarrow{\cup} (R_1'\ \overrightarrow{\bowtie}\ R_2') = (R_1 \cup R_1')\ \overrightarrow{\bowtie}\ (R_2 \cup R_2')
+	\end{equation}
+	% \begin{equation*}
+		% 	\overrightarrow{\cap} ::\ R\overrightarrow{\bowtie}R' \rightarrow R\overrightarrow{\bowtie}R' \rightarrow R\overrightarrow{\bowtie}R'
+	% \end{equation*}
+	% \begin{multline*}
+		% 	\forall R_1, R_2, R_1', R_2' : R_2'.name \subset (R_1.name \cup R_1'.name),\\
+		% 	R_1.version \leq R_2'.version, R_1'.version > R_2.version:
+	% \end{multline*}
+\end{definition}
+
+% \begin{definition}
+% 	Выборка из версионного соединения 
+% \end{definition}
+\indent Обозначим версионное соединение отношений $R_1$ и $R_2$, как $J$:
+\begin{eqnarray*}
+	R_1 \overrightarrow{\bowtie} R_2 & \Leftrightarrow & J \\
+	R_1' \overrightarrow{\bowtie} R_2' & \Leftrightarrow & J'
+\end{eqnarray*}
 
 \begin{theorem}
-	Любая выборка ($\sigma_\phi$) из отношения полученного путем объединения двух версионных соединений $R$ и $R'$ будет включать в себя выборку по тому же условию из $R$.
+	\label{th:th1}
+	Любая выборка из версионного соединения $J$ входит в выборку из объединения $J$ и любого допустимого версионного соединения $J'$ (отношения $R_1$ и $R_1'$ и $R_2$ и $R_2'$ одинаковы по набору атрибутов) по условиям $\overrightarrow{\cup}$.
+	\begin{equation}
+		\forall J, J': \sigma_\phi(J) \subset \sigma_\phi(J \overrightarrow{\cup} J')
+	\end{equation}
 \end{theorem}
-\begin{eqnarray}
-	&R\ & \leftarrow (R_1\ \overrightarrow{\bowtie}\ R_2),\ 
-	R'\ \leftarrow (R'_1\ \overrightarrow{\bowtie}\ R'_2)\\
-	&f:: & R_1 \overrightarrow{\bowtie}\ R_2 \rightarrow R_1\ \overrightarrow{\bowtie}\ R_2 \rightarrow R_1\ \overrightarrow{\bowtie}\ R_2 \\
-	&\forall\ & R,\ R', f : R\ \subsetneq\ f (R,\ R') \\
-	&\forall\ & \phi,\ R,\ R' :\ \sigma_\phi(R) \subset \sigma_\phi(f(R,\ R'))
-	\label{eq:th}
-\end{eqnarray}
 
-\indent Если предположить, что теорема \ref{eq:th} неверна, тогда объединение $R$ и $R'$ не включают в себя $R$ для любого условия $\phi$:
-\todo{декомпозировать}
-\begin{eqnarray}
-	&R& \not\subset\ f(R,\ R') \\
-	&R& \not\subset\ R\ \cup\ R' \\
-	&R& \not\subset\ (R_1\ \overrightarrow{\bowtie}\ R_2)\ \cup\ (R_1'\ \overrightarrow{\bowtie}\ R_2') \\
-	&R_1& \overrightarrow{\bowtie}\ R_2 \not\subset (R_1\ \cup\ R_2)\ \overrightarrow{\bowtie}\ (R_1'\ \cup\ R_2')\label{eq:wrong} \\
-\end{eqnarray}
-\indent Так как множества могут быть в том числе и пустыми, приравняем $R_1'$ и $R_2'$ пустому множеству:
+\indent Если предположить, что теорема \ref{th:th1} неверна, тогда объединение $J$ и $J'$ не включают в себя $J$ для любого условия $\phi$.
+Предположим что $\phi = true$, тогда выборка из $J$ будет содержать полное множество отношения $J$:
+\begin{equation*}
+	\label{eq:firstProof}
+	\forall J: J \Leftrightarrow \sigma_{true}(J) \Rightarrow J \not\subset\ J\ \overrightarrow{\cup}\ J'
+\end{equation*}
+\indent По определению $J \Leftrightarrow R_1\ \overrightarrow{\bowtie}\ R_2$:
+\begin{equation}
+	R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset\ (R_1\ \overrightarrow{\bowtie}\ R_2)\ \overrightarrow{\cup}\ (R_1'\ \overrightarrow{\bowtie}\ R_2')
+\end{equation}
+\indent По определению \ref{def:union}:
+\begin{equation}
+	\label{eq:notsbset}
+	R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset (R_1\ \cup\ R_2)\ \overrightarrow{\bowtie}\ (R_1'\ \cup\ R_2')
+\end{equation}
+\indent Так как отношения могут быть в том числе и пустыми, приравняем $R_1'$ и $R_2'$ пустому отношению, тогда выражение \ref{eq:notsbset} примет вид:
 \begin{equation}
 	\label{eq:proof}
 	\left.
@@ -77,8 +87,101 @@
 	\right\} \Rightarrow
 	R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset R_1\ \overrightarrow{\bowtie}\ R_2
 \end{equation}
-\indent Из выражения \ref{eq:proof} видно, что в результате получается, что версионное соединение множеств не входит само в себя, что неверно.
-Из этого следует что изначальное предположение оказалось неверным, а следовательно теорема \ref{eq:th} доказана.
+\indent Из выражения \ref{eq:proof} видно, что в результате получается, что версионное соединение отношений не входит само в себя, что неверно.
+Из этого следует что изначальное предположение оказалось неверным, а следовательно теорема \ref{th:th1} верна, что и требовалось доказать.
+
+\indent Пусть заданы три отношения $R_1$, $R_2$ и $R_3$, такие что:
+\begin{eqnarray*}
+	R_1 & = & <name, version, ...> \\
+	R_2 & = & <FK(R_1, name), version, ...>\\
+	R_3 & = & <FK(R_2, name), version, ...>
+\end{eqnarray*}
+\begin{theorem}
+	\label{th:assoc}
+	Версионное соединение лево ассоциативно.
+	\begin{equation}
+		R_1 \overrightarrow{\bowtie} (R_2 \overrightarrow{\bowtie} R_3) \Rightarrow R_1 \overrightarrow{\bowtie} R_3
+	\end{equation}
+\end{theorem}
+\todo{посмотреть по терминологии подходит ли название ассоциативности}
+
+
+\indent Так как известно, что $R_2.name \subset R_1.name$, а $R_3.name \subset R_2.name$, тогда $R_3.name \subset R_1.name$.
+Также известно из определения \ref{def:join}, из условия выборки, что $R_1.version \leq R_2.version$ и $R_2.version \leq R_3.version$, что означает корректность выражения $R_1.version \leq R_3.version$.
+В итоге получается, что совпадают оба условия существования версионного соединения для $R_1$ и $R_2$, подтверждает теорему \ref{th:assoc}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \indent Формула \ref{eq:versJoin} отражает эквивалентность ``версионного соединения'' и связанных по условию отношений $R_1$ и $R_2$.
+% То есть для версионного соединения должны выполняться два условия:
+% \begin{itemize}
+% 	\item внешний ключ $R_2.name$ второго отношения существует в домене $R_1.name$;
+% 	\item версия указанная во втором отношении не меньше версии указанной в первом.
+% \end{itemize}
+
+% \indent При их соблюдении возможно применять свойство следующее из определения версионного соединения:
+% \begin{equation}
+% 	\forall\ f : f(R_1\ \overrightarrow{\bowtie}\ R_2,\ R_1'\ \overrightarrow{\bowtie}\ R_2') \Leftrightarrow
+% 	f(R_1,\ R_1')\ \overrightarrow{\bowtie}\ f(R_2,\ R_2')
+% \end{equation}
+% \indent Другое свойство версионного соединения: 
+% \begin{multline}
+% 	\label{eq:prop2}
+% 	\forall R, R', R_1', R_2', f : R \varsubsetneq f(R, R'), R_1\ \overrightarrow{\bowtie}\ R_2, R_2'.name \subset R_1.name :\\
+% 	\left.
+% 	\begin{array}{ccc}
+% 		f(R_1, R_1') \Rightarrow \bot \\
+% 		f(R_2, R_2') \Rightarrow R_2'' \\
+% 		f(R_1, R_1'), f(R_2, R_2') \Rightarrow R_1'', R_2''
+% 	\end{array} 
+% 	\right\} \Rightarrow
+% 	\left.
+% 	\begin{array}{ccc}
+% 		\bot \\
+% 		R_1\ \overrightarrow{\bowtie}\ R_2''\\
+% 		R_1''\ \overrightarrow{\bowtie}\ R_2''
+% 	\end{array}
+% 	\right.
+% \end{multline}
+% \to\do{как это адекватно записать?}
+% \indent В выражении \ref{eq:prop2} показано свойство, что изменение множества кортежей отношения $R_1$ функцией $f(R, R')$ недопустимо, при том что либо только $R_2$ либо и то и другое отношение одновременно могут быть изменены при соблюдении условий версионного соединения.\\
+% \indent Оператор версионного соединения ($\overrightarrow{\bowtie}$) не следует понимать как обычное пересечение ($\bowtie$), потому как он лишь отражает взаимосвязь двух отношений не соединяя их в одно.
+
+% \begin{theorem}
+% 	Любая выборка ($\sigma_\phi$) из отношения полученного путем объединения двух версионных соединений $R$ и $R'$ будет включать в себя выборку по тому же условию из $R$.
+% \end{theorem}
+% \begin{eqnarray}
+% 	&R\ & \leftarrow (R_1\ \overrightarrow{\bowtie}\ R_2),\ 
+% 	R'\ \leftarrow (R'_1\ \overrightarrow{\bowtie}\ R'_2)\\
+% 	&f:: & R_1 \overrightarrow{\bowtie}\ R_2 \rightarrow R_1\ \overrightarrow{\bowtie}\ R_2 \rightarrow R_1\ \overrightarrow{\bowtie}\ R_2 \\
+% 	&\forall\ & R,\ R', f : R\ \subsetneq\ f (R,\ R') \\
+% 	&\forall\ & \phi,\ R,\ R' :\ \sigma_\phi(R) \subset \sigma_\phi(f(R,\ R'))
+% 	\label{eq:th}
+% \end{eqnarray}
+
+% \indent Если предположить, что теорема \ref{eq:th} неверна, тогда объединение $R$ и $R'$ не включают в себя $R$ для любого условия $\phi$:
+% \t\odo{декомпозировать}
+% \begin{eqnarray}
+% 	&R& \not\subset\ f(R,\ R') \\
+% 	&R& \not\subset\ R\ \cup\ R' \\
+% 	&R& \not\subset\ (R_1\ \overrightarrow{\bowtie}\ R_2)\ \cup\ (R_1'\ \overrightarrow{\bowtie}\ R_2') \\
+% 	&R_1& \overrightarrow{\bowtie}\ R_2 \not\subset (R_1\ \cup\ R_2)\ \overrightarrow{\bowtie}\ (R_1'\ \cup\ R_2')\label{eq:wrong} \\
+% \end{eqnarray}
+% \indent Так как множества могут быть в том числе и пустыми, приравняем $R_1'$ и $R_2'$ пустому множеству:
+% \begin{equation}
+% 	\label{eq:proof}
+% 	\left.
+% 		\begin{array}{ccc}
+% 			&R_1'\ & =\ \varnothing \\
+% 			&R_2'\ & =\ \varnothing \\
+% 		\end{array}
+% 	\right\} \Rightarrow
+% 	R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset R_1\ \overrightarrow{\bowtie}\ R_2
+% \end{equation}
+% \indent Из выражения \ref{eq:proof} видно, что в результате получается, что версионное соединение множеств не входит само в себя, что неверно.
+% Из этого следует что изначальное предположение оказалось неверным, а следовательно теорема \ref{eq:th} доказана.
 
 % \begin{equation*}
 	% 	\forall name \in R_1.name : \forall v_1 \in R_1.version v_2 \in R_1.version: v_1 \neq v_2 :
@@ -88,5 +191,5 @@
 % \end{equation}
 
 \todo[inline]{Доказать}
-\todo[inline]{монотонность версий}
+% \to\do[inline]{монотонность версий}
 \todo[inline]{оформить свойства и определение}
