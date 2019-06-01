@@ -1,0 +1,243 @@
+\renewcommand\thechapter{\CYRA\arabic{chapter}}
+\renewcommand\appendixname{Приложение~А}
+\chapter*{~~Модель сборочной линии}\label{chap:a}
+\addcontentsline{toc}{chapter}{\appendixname~~Модель сборочной линии}
+\renewcommand{\thefigure}{\CYRA\arabic{figure}}
+
+Листинг~\ref{lst:lineBind} содержит реализацию привязки операции к модели сборочной линии.
+
+\begin{lstlisting}[language=Golang,caption={Метод привязки операции к модели},label=lst:lineBind]
+	func (assembly *AssemblyLine) Bind(conf interface{}, events ...*imcore.ConcreteEvent) {
+		assembly.checkConfig(conf)
+		if assembly.remain == nil {
+			assembly.remain = make(map[*imcore.ConcreteEvent][]*imcore.ConcreteEvent)
+			assembly.complete = make(map[*imcore.ConcreteEvent][]*imcore.ConcreteEvent)
+		}
+		for _, e := range events {
+			assembly.remain[e] = events
+		}
+		assembly.initEvent(conf, events...)
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:lineConstr} содержит реализацию метода проверки возможности выполнения операции моделью сборочной линии.
+
+\begin{lstlisting}[language=Golang,caption={Метод ограничения},label=lst:lineConstr]
+	func (assembly *AssemblyLine) Constrain(event *imcore.ConcreteEvent) (int64, bool) {
+		lineNum, position, onLine := assembly.findProduct(event.ProductSN, event.ProductType)
+		if onLine {
+			if assembly.lineReady(lineNum) {
+				return assembly.lines[lineNum].maxTime, true
+			} else if !assembly.containsEvent(position, event) {
+				return assembly.lines[lineNum].maxTime, false
+			}
+		} else {
+			num, canLoad := assembly.canLoad()
+			if !canLoad {
+				return assembly.lines[0].minTime, false
+			}
+			lineNum = num
+		}
+		return assembly.lines[lineNum].minTime, true
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:lineDone} содержит реализацию завершения операции моделью сборочной линии.
+
+\begin{lstlisting}[language=Golang,caption={Метод выполняющий завершение операции},label=lst:lineDone]
+	func (assembly *AssemblyLine) Done(event *imcore.ConcreteEvent) {
+		
+		lineNum, _, onLine := assembly.findProduct(event.ProductSN, event.ProductType)
+		if event.EventType == imcore.BeginEvent {
+			if !onLine {
+				
+				assembly.loadProduct(event)
+			} else {
+				if assembly.lineReady(lineNum) {
+					assembly.moveLine(lineNum, event)
+				}
+			}
+		} else {
+			assembly.finishOperation(event)
+		}
+		assembly.assertBind(event)
+		assembly.complete[event] = assembly.remain[event]
+		delete(assembly.remain, event)
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:lineLoad} содержит реализацию загрузки продукта на одну из линий модели.
+
+\begin{lstlisting}[language=Golang,caption={Метод загрузки продукта на одну из линий},label=lst:lineLoad]
+	func (assembly *AssemblyLine) loadProduct(event *imcore.ConcreteEvent) bool {
+		_, position, onLine := assembly.findProduct(event.ProductSN, event.ProductType)
+		if !onLine && position != -1 {
+			minLine, canLoad := assembly.canLoad()
+			if canLoad {
+				line := assembly.lines[minLine]
+				if !line.stations[0].isWorking && len(assembly.queue) > 0 {
+					
+					station := line.stations[0]
+					if len(assembly.remainEvents[0][makeProduct(event)]) > 0 {
+						station.isWorking = true
+					}
+					station.time = line.minTime
+					station.product = assembly.queue[position]
+					station.isEmpty = false
+					line.stations[0] = station
+					assembly.lines[minLine] = line
+					
+					queue := assembly.queue
+					if position < len(queue)-1 {
+						queue = append(queue[:position], queue[position+1:]...)
+					} else {
+						queue = queue[:position]
+					}
+					assembly.queue = queue
+					log.Printf("Line (%d) %s loaded on station 0", minLine, station.product.String())
+					return true
+				}
+			}
+		}
+		return false
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:lineMove} содержит реализацию сдвига линии модели.
+
+\begin{lstlisting}[language=Golang,caption={Метод сдвига линии},label=lst:lineMove]
+	func (assembly *AssemblyLine) moveLine(lineNum int, event *imcore.ConcreteEvent) bool {
+		if !assembly.lineReady(lineNum) {
+			return false
+		}
+		line := assembly.lines[lineNum]
+		line.minTime = line.maxTime
+		
+		if !line.stations[len(line.stations)-1].isEmpty {
+			log.Printf("Line (%d) %s unloaded from line (timestamp: %d)", lineNum, line.stations[len(line.stations)-1].product.String(), line.minTime)
+		}
+		for i := len(line.stations) - 1; i > 0; i-- {
+			station := line.stations[i]
+			prevStation := line.stations[i-1]
+			station.product = prevStation.product
+			station.isEmpty = prevStation.isEmpty
+			station.time = line.minTime
+			if !station.isEmpty {
+				station.isWorking = true
+			}
+			prevStation.product = Product{
+				SerialNumber: -1,
+				TypeName:     "",
+			}
+			prevStation.isEmpty = true
+			prevStation.isWorking = false
+			line.stations[i] = station
+			line.stations[i-1] = prevStation
+			
+			if !station.isEmpty {
+				log.Printf("Line (%d) %s changing station (%d -> %d)", lineNum, station.product.String(), i-1, i)
+			}
+		}
+		assembly.lines[lineNum] = line
+		return true
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:lineFinish} содержит реализацию окончания операции к модели сборочной линии.
+
+\begin{lstlisting}[language=Golang,caption={Метод окончания операции},label=lst:lineFinish]
+	func (assembly *AssemblyLine) finishOperation(event *imcore.ConcreteEvent) {
+		lineNum, position, onLine := assembly.findProduct(event.ProductSN, event.ProductType)
+		if onLine {
+			station := assembly.lines[lineNum].stations[position]
+			product := makeProduct(event)
+			triggers := assembly.remainEvents[position][product]
+			for i, trigger := range triggers {
+				if trigger == event {
+					if i+1 < len(triggers) {
+						triggers = append(triggers[:i], triggers[i+1:]...)
+					} else {
+						triggers = triggers[:i]
+					}
+					log.Printf("Line (%d) %s changing timestamp (%d)", lineNum, station.product.String(), *event.Value)
+					station.time = *event.Value
+					if len(triggers) < 1 {
+						station.isWorking = false
+					}
+					
+					if assembly.lines[lineNum].maxTime < station.time {
+						assembly.lines[lineNum].maxTime = station.time
+					}
+					assembly.lines[lineNum].stations[position] = station
+					assembly.remainEvents[position][product] = triggers
+				}
+			}
+			if !station.isWorking {
+				assembly.moveLine(lineNum, event)
+			}
+		} else {
+			panic("Not queued product done!")
+		}
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:lineFind} содержит реализацию определения на какой линии находится продукт дял данной операции.
+
+\begin{lstlisting}[language=Golang,caption={Метод, производящий определение линии по заданной продукции},label=lst:lineFind]
+	func (assembly *AssemblyLine) findProduct(productSN imcore.ProductSN, productType imcore.ProductTypeName) (int, int, bool) {
+		for lineNum, line := range assembly.lines {
+			for stationNum, station := range line.stations {
+				if station.product.SerialNumber == productSN && station.product.TypeName == productType {
+					return lineNum, stationNum, true
+				}
+			}
+		}
+		for pos, item := range assembly.queue {
+			if item.SerialNumber == productSN && item.TypeName == productType {
+				return -1, pos, false
+			}
+		}
+		return -1, -1, false
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:lineCan} содержит реализацию проверки возможности загрузки продукта на одну из линий модели.
+
+\begin{lstlisting}[language=Golang,caption={Метод, определяющий возможность загрузки продукции на одну из линий},label=lst:lineCan]
+	func (assembly *AssemblyLine) canLoad() (int, bool) {
+		if len(assembly.queue) > 0 && len(assembly.lines) > 0 {
+			lineWithMinWorkTime := -1
+			assemblyMinWorkTime := int64(0)
+			for i, line := range assembly.lines {
+				if !line.stations[0].isWorking && line.stations[0].isEmpty {
+					if (assemblyMinWorkTime > line.minTime) || (lineWithMinWorkTime == -1) {
+						assemblyMinWorkTime = line.minTime
+						lineWithMinWorkTime = i
+					}
+				}
+			}
+			if lineWithMinWorkTime != -1 {
+				return lineWithMinWorkTime, true
+			}
+		}
+		return -1, false
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:lineReady} содержит реализацию проверки готовности линии к сдвигу.
+
+\begin{lstlisting}[language=Golang,caption={Метод, производящий проверку готовности линии к сдвигу},label=lst:lineReady]
+	func (assembly *AssemblyLine) lineReady(lineNum int) bool {
+		for i, station := range assembly.lines[lineNum].stations {
+			product := Product{station.product.TypeName, station.product.SerialNumber}
+			if station.isWorking && !station.isEmpty && len(assembly.remainEvents[i][product]) > 0 {
+				return false
+			}
+		}
+		station := assembly.lines[lineNum].stations[0]
+		if !station.isWorking && len(assembly.queue) > 0 && station.isEmpty {
+			return false
+		}
+		return true
+	}
+\end{lstlisting}

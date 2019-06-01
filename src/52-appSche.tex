@@ -1,0 +1,162 @@
+\renewcommand\appendixname{Приложение~В}
+\chapter*{~~Модуль отображения логического времени на физическое}\label{chap:b}
+\addcontentsline{toc}{chapter}{\appendixname~~Модуль отображения логического времени на физическое}
+
+Листинг~\ref{lst:time} содержит функцию для запуска отображения логического времени на физическое. Также определяет в зависимости от знака поданного логического времени какой расчет будет запущен.
+
+\begin{lstlisting}[language=Golang,caption={Публичная функция для запуска извне},label=lst:time]
+	func LogicalToPhysTime(physStarts int64, logicalTime int64, config ConverterConfig) (int64, int64) {
+		confNum, wasPrinted := checkConfig(config)
+	
+		if !wasPrinted {
+			log.Printf("New config %d: %+v\n", confNum, config)
+		} else {
+			log.Printf("Found config %d\n", confNum)
+		}
+		log.Printf("Start time is: %v (%v)", physStarts, time.Unix(physStarts, 0).UTC().Format("02/01/2006 15:04:05"))
+		log.Printf("Given logical time is: %v (%v in hours)", logicalTime, logicalTime/secondsInHour)
+	
+		if logicalTime == 0 {
+			first, _ := mapLogicalToPhysTime(physStarts, logicalTime, config, true)
+			_, second := mapLogicalToPhysTime(physStarts, logicalTime, config, false)
+			return first, second
+		} else if logicalTime > 0 {
+			return mapLogicalToPhysTime(physStarts, logicalTime, config, false)
+		}
+		second, first := mapLogicalToPhysTime(physStarts, -logicalTime, config, true)
+		return first, second
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:map} содержит основной алгоритм отображения. Возвращает два значения: начало и конец интервала, на который отображается логическое время.
+
+\begin{lstlisting}[language=Golang,caption={Алгоритм отображения},label=lst:map]
+	func mapLogicalToPhysTime(physStarts int64, logicalTime int64, config ConverterConfig, isReverted bool) (int64, int64) {
+		curOffset := int64(0)
+		curTime := physStarts
+		first := int64(0)
+		isLeftFound := false
+		log.Println(" Logical time | Physical time")
+		log.Println("--------------|----------------------------------")
+		for curOffset <= logicalTime {
+			curDay := timeToDate(curTime, isReverted)
+			intervals := config.getSchedule(curTime, isReverted)
+	
+			if len(intervals) < 1 {
+				curTime = nextDay(curTime, isReverted)
+				continue
+			}
+	
+			for _, interval := range intervals {
+				log.Printf(" %-13v| %v (%v)", curOffset, curTime, time.Unix(curTime, 0).UTC().Format("02/01/2006 15:04:05"))
+				curOffset, curTime = interval.appendIntervalDur(curTime, curOffset, curDay, isReverted)
+				if curOffset >= logicalTime {
+					curTime = appendTime(curTime, logicalTime-curOffset, isReverted)
+					if !isLeftFound {
+						first = curTime
+						curOffset = logicalTime
+						isLeftFound = true
+						break
+					} else {
+						break
+					}
+				}
+			}
+		}
+		log.Println("Result:")
+		log.Println("----------------------------------")
+		log.Printf(" %-13v| [%-19v - %-19v]", logicalTime, first, curTime)
+		log.Printf(" %-13v| [%-19v - %-19v]", logicalTime, time.Unix(first, 0).UTC().Format("02/01/2006 15:04:05"), time.Unix(curTime, 0).UTC().Format("02/01/2006 15:04:05"))
+		return first, curTime
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:append} содержит метод реализующий прибавление или вычитание интервала в зависимости от направления расчета.
+
+\begin{lstlisting}[language=Golang,caption={Добавление рабочего интервала},label=lst:append]
+	func (interval WorkInterval) appendIntervalDur(physTime int64, logicalTime int64, day int64, isReverted bool) (int64, int64) {
+		if isReverted {
+			if (interval.Ends + day) >= physTime {
+				logicalTime += physTime - day - interval.Starts
+			} else {
+				logicalTime += interval.Ends - interval.Starts
+			}
+			physTime = day + interval.Starts
+		} else {
+			if (interval.Starts + day) <= physTime {
+				logicalTime += interval.Ends - physTime + day
+			} else {
+				logicalTime += interval.Ends - interval.Starts
+			}
+			physTime = day + interval.Ends
+		}
+		return logicalTime, physTime
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:get} содержит реализацию метода получения смен занятых сотрудников. В зависимости от направления расчета может ``развернуть'' список интервалов.
+
+\begin{lstlisting}[language=Golang,caption={Метод получения расписания смен занятых сотрудников},label=lst:get]
+	func (config ConverterConfig) getSchedule(physTime int64, isReverted bool) []WorkInterval {
+		currentDay := timeToDate(physTime, isReverted)
+	
+		scheduleName := config.getTemplateName(currentDay)
+		intervals := config.ScheduleForDay.getIntervals(physTime-currentDay, scheduleName, isReverted)
+		scheduleName = config.getTemplateName(currentDay - oneDayInSecs)
+		prevIntervals := config.ScheduleForDay.getIntervals((physTime-currentDay)+oneDayInSecs, scheduleName, isReverted)
+	
+		if len(prevIntervals) > 0 {
+			for i, interval := range prevIntervals {
+				if interval.Starts-oneDayInSecs >= 0 || interval.Ends-oneDayInSecs > 0 {
+					prevIntervals[i].Starts = interval.Starts - oneDayInSecs
+					prevIntervals[i].Ends = interval.Ends - oneDayInSecs
+					intervals = append([]WorkInterval{prevIntervals[i]}, intervals...)
+				}
+			}
+		}
+		if isReverted && len(intervals) > 1 {
+			last := len(intervals) - 1
+			for i := 0; i <= last/2; i++ {
+				intervals[i], intervals[last-i] = intervals[last-i], intervals[i]
+			}
+		}
+	
+		return intervals
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:getI} содержит реализацию извлечения смен из конфигурации по заданному шаблону рабочего дня.
+
+\begin{lstlisting}[language=Golang,caption={Извлечение смен из конфигурации по заданному шаблону},label=lst:getI]
+	func (schedules ScheduleForDay) getIntervals(physTime int64, scheduleName DayTemplateName, isReverted bool) []WorkInterval {
+		result := make([]WorkInterval, 0)
+		intervals := schedules[scheduleName]
+	
+		for _, interval := range intervals {
+			if interval.contains(physTime, isReverted) {
+				result = append(result, interval)
+			}
+		}
+		return result
+	}
+\end{lstlisting}
+
+Листинг~\ref{lst:getT} содержит реализацию получения названия шаблона рабочего дня из даты.
+
+\begin{lstlisting}[language=Golang,caption={Получение названия шаблона рабочего дня из даты},label=lst:getT]
+	func (config ConverterConfig) getTemplateName(date int64) DayTemplateName {
+		exception, ok := config.ExceptionDates[date]
+		if ok {
+			return exception
+		}
+		if exception != "" {
+			return exception
+		}
+		for item := range config.ScheduleTemplate {
+			if item == int(time.Unix(date, 0).UTC().Weekday()) {
+				return config.ScheduleTemplate[item]
+			}
+		}
+		panic("No schedule defined")
+	}
+\end{lstlisting}
