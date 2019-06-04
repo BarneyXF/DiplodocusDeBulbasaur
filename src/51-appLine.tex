@@ -1,6 +1,6 @@
 \renewcommand\thechapter{\CYRA\arabic{chapter}}
 \renewcommand\appendixname{Приложение~А}
-\chapter*{~~Модель сборочной линии}\label{chap:a}
+\chapter*{~~}\label{chap:a}
 \addcontentsline{toc}{chapter}{\appendixname~~Модель сборочной линии}
 \renewcommand{\thefigure}{\CYRA\arabic{figure}}
 
@@ -21,6 +21,7 @@
 \end{lstlisting}
 
 Листинг~\ref{lst:lineConstr} содержит реализацию метода проверки возможности выполнения операции моделью сборочной линии.
+
 
 \begin{lstlisting}[language=Golang,caption={Метод ограничения},label=lst:lineConstr]
 	func (assembly *AssemblyLine) Constrain(event *imcore.ConcreteEvent) (int64, bool) {
@@ -133,7 +134,6 @@
 			prevStation.isWorking = false
 			line.stations[i] = station
 			line.stations[i-1] = prevStation
-			
 			if !station.isEmpty {
 				log.Printf("Line (%d) %s changing station (%d -> %d)", lineNum, station.product.String(), i-1, i)
 			}
@@ -159,6 +159,7 @@
 					} else {
 						triggers = triggers[:i]
 					}
+
 					log.Printf("Line (%d) %s changing timestamp (%d)", lineNum, station.product.String(), *event.Value)
 					station.time = *event.Value
 					if len(triggers) < 1 {
@@ -172,6 +173,7 @@
 					assembly.remainEvents[position][product] = triggers
 				}
 			}
+			
 			if !station.isWorking {
 				assembly.moveLine(lineNum, event)
 			}
@@ -192,11 +194,13 @@
 				}
 			}
 		}
+
 		for pos, item := range assembly.queue {
 			if item.SerialNumber == productSN && item.TypeName == productType {
 				return -1, pos, false
 			}
 		}
+
 		return -1, -1, false
 	}
 \end{lstlisting}

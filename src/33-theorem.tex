@@ -1,40 +1,52 @@
 \section{Формализация свойств базы данных}\label{sec:theorem}
+\indent Для достижения согласованности данных необходимо чтобы были запрещены операции модификации и удаления данных, а запись новых кортежей в базу данных обладала двумя свойствами:
+\begin{enumerate}
+	\item[1)] запись во все отношения позволяет получить любую предыдущую версию данных;
+	\item[2)] корректная запись в одно из отношений (при соблюдении соответствующих условий, о которых речь пойдет далее) не нарушает согласованности в базе данных.
+\end{enumerate}
+
 \indent Пусть заданы два отношения $R_1$ и $R_2$, такие что:
 \begin{eqnarray*}
-	R_1 & = & <name, version, ...> \\
-	R_2 & = & <FK(R_1, name), version, ...>
+	R_1 & = & <name_1, version, ...> \\
+	R_2 & = & <FK(R_1, name_1), version, ...>
 \end{eqnarray*}
-\indent $FK(R, a)$ -- внешний ключ, ссылающийся на атрибут $a$ на отношения $R$.\\
-\indent Также для атрибута $version$ данных отношений задано условие монотонного возрастания:
+
+\indent Для атрибута $version$ данных отношений задано требование монотонного возрастания:
 \begin{equation}
-	\forall t_1 \in \mathbb{Z}, t_2 \in \mathbb{Z}, f: M \in \mathbb{R} \rightarrow \mathbb{R} : t_2 > t_1 \Rightarrow f(t_2) > f(t_1)
+	\forall t_1 \in \mathbb{Z}, t_2 \in \mathbb{Z}, f: M \in \mathbb{Z} \rightarrow \mathbb{Z} : t_2 > t_1 \Rightarrow f(t_2) > f(t_1)
 \end{equation}
+
+\indent Например, в качестве самой простой и очевидной монотонно возрастающей функции можно взять функцию линей зависимости версии от времени $version(t) = t$, где $t$ будет количеством секунд с начала эпохи Unix.
+% \todo{необходима корректировка}
+
 
 \begin{definition}
 	\label{def:join}
-	Версионное соединение - это такое соединение двух отношений $R_1$ и $R_2$, для которых справедливо:\todo{условие максимальности наверное не нужно}
+	Версионное соединение -- это такое соединение двух отношений $R_1$ и $R_2$, для которых справедливо:%\todo{условие максимальности наверное не нужно}
 	\begin{multline}
 		\label{eq:versJoin}
-		\forall R_1,\ R_2\ :\ R_1.name\ \supset\ R_2.name:\\
-		R_1\ \overrightarrow{\bowtie}\ R_2\ \Leftrightarrow\ \pi_{*, F_{MAX(R_1.version)}}(\sigma_{R_1.version \leq R_2.version}(R_1\ \bowtie_{R_1.name = R_2.name}\ R_2))
+		\forall R_1,\ R_2\ :\ R_1.name_1\ \supset\ R_2.name_1:\\
+		R_1\ \overrightarrow{\bowtie}\ R_2\ \Leftrightarrow\ _{R_2.version}\gamma(\sigma_{R_1.version \leq R_2.version}(R_1\ \bowtie_{R_1.name_1 = R_2.name_1}\ R_2))
 		% R_1,\ R_2 \Rightarrow R_1\ \overrightarrow{\bowtie}\ R_2\
 	\end{multline}
 \end{definition}
 
-\todo{пофиксить выравнивание}
+\indent Также будем обозначать отношение $\forall n : R_n'$ как отношение которое полностью повторяющее набор атрибутов $R_n$.
+
 \begin{definition}
 	\label{def:union}
-	Пересечение двух версионных соединений $R_1$ и $R_2$ осуществляется по следующему правилу:
+	Объединение двух версионных соединений $R_1$ и $R_2$ осуществляется по следующему правилу:
 	\begin{equation*}
-		\overrightarrow{\cup} ::\ R\overrightarrow{\bowtie}R' \rightarrow R\overrightarrow{\bowtie}R' \rightarrow R\overrightarrow{\bowtie}R'
+		\overrightarrow{\cup} :\ R_1\overrightarrow{\bowtie}R_2' \rightarrow R_1\overrightarrow{\bowtie}R_2' \rightarrow R_1\overrightarrow{\bowtie}R_2'
 	\end{equation*}
-	\begin{multline}
+	\begin{multline*}
 		\forall R_1,R_2,R_1',R_2': R_2'.name \subset (R_1.name \cup R_1'.name),\\
 		R_1.version \leq R_2'.version, R_1'.version > R_2.version:
-	\end{multline}
+	\end{multline*}
 	\begin{equation}
 		(R_1\overrightarrow{\bowtie}\ R_2) \overrightarrow{\cup} (R_1'\ \overrightarrow{\bowtie}\ R_2') = (R_1 \cup R_1')\ \overrightarrow{\bowtie}\ (R_2 \cup R_2')
 	\end{equation}
+	Во всех случаях не описанных выше объединение не может быть произведено.
 	% \begin{equation*}
 		% 	\overrightarrow{\cap} ::\ R\overrightarrow{\bowtie}R' \rightarrow R\overrightarrow{\bowtie}R' \rightarrow R\overrightarrow{\bowtie}R'
 	% \end{equation*}
@@ -44,81 +56,149 @@
 	% \end{multline*}
 \end{definition}
 
-% \begin{definition}
-% 	Выборка из версионного соединения 
-% \end{definition}
-\indent Обозначим версионное соединение отношений $R_1$ и $R_2$, как $J$:
+\indent Обозначим версионное соединение отношений $R_1$ и $R_2$, как $\overrightarrow{J}$:
 \begin{eqnarray*}
-	R_1 \overrightarrow{\bowtie} R_2 & \Leftrightarrow & J \\
-	R_1' \overrightarrow{\bowtie} R_2' & \Leftrightarrow & J'
+	R_1 \overrightarrow{\bowtie} R_2 & \Leftrightarrow & \overrightarrow{J} \\
+	R_1' \overrightarrow{\bowtie} R_2' & \Leftrightarrow & \overrightarrow{J}'
 \end{eqnarray*}
 
 \begin{theorem}
 	\label{th:th1}
-	Любая выборка из версионного соединения $J$ входит в выборку из объединения $J$ и любого допустимого версионного соединения $J'$ (отношения $R_1$ и $R_1'$ и $R_2$ и $R_2'$ одинаковы по набору атрибутов) по условиям $\overrightarrow{\cup}$.
+	Любая выборка из версионного соединения $\overrightarrow{J}$ входит в выборку из объединения $\overrightarrow{J}$ и любого допустимого версионного соединения $\overrightarrow{J}'$ (отношения $R_1$ и $R_1'$ и $R_2$ и $R_2'$ одинаковы по набору атрибутов) по условиям $\overrightarrow{\cup}$.
 	\begin{equation}
-		\forall J, J': \sigma_\phi(J) \subset \sigma_\phi(J \overrightarrow{\cup} J')
+		\forall \overrightarrow{J}, \overrightarrow{J}': \sigma_\phi(\overrightarrow{J}) \subset \sigma_\phi(\overrightarrow{J} \overrightarrow{\cup} \overrightarrow{J}')
 	\end{equation}
 \end{theorem}
-
-\indent Если предположить, что теорема \ref{th:th1} неверна, тогда объединение $J$ и $J'$ не включают в себя $J$ для любого условия $\phi$.
-Предположим что $\phi = true$, тогда выборка из $J$ будет содержать полное множество отношения $J$:
-\begin{equation*}
-	\label{eq:firstProof}
-	\forall J: J \Leftrightarrow \sigma_{true}(J) \Rightarrow J \not\subset\ J\ \overrightarrow{\cup}\ J'
-\end{equation*}
-\indent По определению $J \Leftrightarrow R_1\ \overrightarrow{\bowtie}\ R_2$:
-\begin{equation}
-	R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset\ (R_1\ \overrightarrow{\bowtie}\ R_2)\ \overrightarrow{\cup}\ (R_1'\ \overrightarrow{\bowtie}\ R_2')
-\end{equation}
-\indent По определению \ref{def:union}:
-\begin{equation}
-	\label{eq:notsbset}
-	R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset (R_1\ \cup\ R_2)\ \overrightarrow{\bowtie}\ (R_1'\ \cup\ R_2')
-\end{equation}
-\indent Так как отношения могут быть в том числе и пустыми, приравняем $R_1'$ и $R_2'$ пустому отношению, тогда выражение \ref{eq:notsbset} примет вид:
-\begin{equation}
-	\label{eq:proof}
-	\left.
+\begin{proof}
+	\indent Если предположить, что теорема \ref{th:th1} неверна, тогда объединение $\overrightarrow{J}$ и $\overrightarrow{J}'$ не включают в себя $\overrightarrow{J}$ для любого условия $\phi$.
+	Предположим что $\phi = true$, тогда выборка из $\overrightarrow{J}$ будет содержать полное множество отношения $\overrightarrow{J}$:
+	\begin{equation*}
+		\label{eq:firstProof}
+		\forall \overrightarrow{J}: \overrightarrow{J} \Leftrightarrow \sigma_{true}(\overrightarrow{J}) \Rightarrow \overrightarrow{J} \not\subset\ \overrightarrow{J}\ \overrightarrow{\cup}\ \overrightarrow{J}'
+	\end{equation*}
+	\indent По определению $\overrightarrow{J} \Leftrightarrow R_1\ \overrightarrow{\bowtie}\ R_2$:
+	\begin{equation}
+		R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset\ (R_1\ \overrightarrow{\bowtie}\ R_2)\ \overrightarrow{\cup}\ (R_1'\ \overrightarrow{\bowtie}\ R_2')
+	\end{equation}
+	\indent По определению \ref{def:union}:
+	\begin{equation}
+		\label{eq:notsbset}
+		R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset (R_1\ \cup\ R_1')\ \overrightarrow{\bowtie}\ (R_2\ \cup\ R_2')
+	\end{equation}
+	
+	\indent По определению объединения множеств $R_1 \cup R_2 = \{x~|~x~\in
+	~R_1\ |\ x~\in~R_2\}$, что говорит о том, что результирующее множество содержит полное множество $R_1$ и $R_2$, следовательно :
+	
+	\begin{equation}
+		\label{eq:proof}
+		\forall R_1', R_2':
+		\left.
 		\begin{array}{ccc}
-			&R_1'\ & =\ \varnothing \\
-			&R_2'\ & =\ \varnothing \\
+			&R_1\ & \not\subset\ (R_1 \cup R_1') \\
+			&R_2\ & \not\subset\ (R_2 \cup R_2') \\
 		\end{array}
-	\right\} \Rightarrow
-	R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset R_1\ \overrightarrow{\bowtie}\ R_2
-\end{equation}
-\indent Из выражения \ref{eq:proof} видно, что в результате получается, что версионное соединение отношений не входит само в себя, что неверно.
-Из этого следует что изначальное предположение оказалось неверным, а следовательно теорема \ref{th:th1} верна, что и требовалось доказать.
+		\right.
+		% \left.
+		% 	\begin{array}{ccc}
+			% 		&R_1'\ & =\ \varnothing \\
+			% 		&R_2'\ & =\ \varnothing \\
+		% 	\end{array}
+		% \right\} \Rightarrow
+		% R_1\ \overrightarrow{\bowtie}\ R_2 \not\subset R_1\ \overrightarrow{\bowtie}\ R_2
+	\end{equation}
+	\indent Выражения \ref{eq:proof} опровергают определение объединения множеств, что приводит к выводу о неверности предположения.
+	Из этого следует, что теорема \ref{th:th1} верна, что и требовалось доказать.
+\end{proof}
 
 \indent Пусть заданы три отношения $R_1$, $R_2$ и $R_3$, такие что:
+%\todo{Дописать}
 \begin{eqnarray*}
-	R_1 & = & <name, version, ...> \\
-	R_2 & = & <FK(R_1, name), version, ...>\\
-	R_3 & = & <FK(R_2, name), version, ...>
+	R_1 & = & <name_1, version_1, ...> \\
+	R_2 & = & <FK(R_1, name_1), name_2, version_2, ...>\\
+	R_3 & = & <FK(R_2, name_2), version_3, ...>
 \end{eqnarray*}
 \begin{theorem}
 	\label{th:assoc}
-	Версионное соединение лево ассоциативно.
+	Для любого версионного объединения $(R_2 \overrightarrow{\bowtie} R_3 ) \overrightarrow{\cup} (R_2' \overrightarrow{\bowtie} R_3')$ существует корректное версионное соединение получившегося отношения с $R_1$.
 	\begin{equation}
-		R_1 \overrightarrow{\bowtie} (R_2 \overrightarrow{\bowtie} R_3) \Rightarrow R_1 \overrightarrow{\bowtie} R_3
+		R_1 \overrightarrow{\not\bowtie} (R_2 \overrightarrow{\bowtie} R_3) \Rightarrow R_1 \overrightarrow{\not\bowtie} ((R_2 \overrightarrow{\bowtie} R_3 ) \overrightarrow{\cup} (R_2' \overrightarrow{\bowtie} R_3'))
 	\end{equation}
 \end{theorem}
-\todo{посмотреть по терминологии подходит ли название ассоциативности}
+\begin{proof}
+	\indent Пусть не существует верное соединение при верном версионном объединении:
+	\begin{equation}
+		\label{eq:notbowtie}
+		R_1 \overrightarrow{\not\bowtie} (R_2 \overrightarrow{\bowtie} R_3 ) \overrightarrow{\cup} (R_2' \overrightarrow{\bowtie} R_3'))
+	\end{equation}
+	
+	\indent Следовательно не выполняется одно либо оба условия существования версионного соединения:
+	\begin{enumerate}
+		\item[1)] $((R_2 \overrightarrow{\bowtie} R_3 ) \overrightarrow{\cup} (R_2' \overrightarrow{\bowtie} R_3')).name_1 \not\subset R_1.name_1$;
+		\item[2)] $((R_2 \overrightarrow{\bowtie} R_3 ) \overrightarrow{\cup} (R_2' \overrightarrow{\bowtie} R_3')).version_3 < R_1.version_1$
+	\end{enumerate}
+	\indent Если рассматривать первый вариант, то необходимо, используя определение \ref{def:union}, упростить выражение \ref{eq:notbowtie}:
+	\begin{equation}
+		R_1 \overrightarrow{\not\bowtie} ((R_2 \cup R_2') \overrightarrow{\bowtie} (R_3 \cup R_3'))
+	\end{equation}
+	\indent Тогда, используя определение отношений:
+	\begin{equation}
+		(R_2 \cup R_2').name_1 \not\subset R_1.name_1
+	\end{equation}
+	\indent Так как в начальный момент времени система находилась в состоянии согласованности, то $R_2.name_1 \subset R_1.name_1 \Rightarrow R_2' \not\subset R_1.name_1$.
+	Данное утверждение является нарушением целостности по ссылкам, так что любая система управления базами данных запретит объединение $R_2 \cup R_2'$.\\
+	\indent Рассматривая второе условие:
+	\begin{equation}
+		((R_2 \cup R_2') \overrightarrow{\bowtie} (R_3 \cup R_3')).version_3 < R_1.version_1
+	\end{equation}
+	\indent Тогда, используя определение отношений:
+	\begin{equation}
+		(R_3 \cup R_3').version_3 < R_1.version_1
+	\end{equation}
+	\indent Так как в начальный момент времени система находилась в состоянии согласованности, то:
+	\begin{equation}
+		R_1.version_1 \leq R_3.version3 \Rightarrow
+		\begin{cases}
+			R_3'.version_3 < R_1.version_1 \\
+			R_3'.version_3 < R_3.version_3
+		\end{cases}
+	\end{equation} 
+	\indent Из данной системы следует нарушение монотонности возрастания значения версий (новая версия меньше старой), что является нарушением условий версионного объединения.\\
+	\indent В результате, оба варианта получения несогласованного состояния в базе данных ограничиваются либо системой управления базами данных, либо заданными определениями, что доказывает теорему \ref{th:assoc}.
+	\indent Так как теорема \ref{th:assoc} справедлива для 3 отношений, можно сказать что данная теорема будет справедлива и для $\forall N \in \mathbb{Z}$.
+\end{proof}
 
-
-\indent Так как известно, что $R_2.name \subset R_1.name$, а $R_3.name \subset R_2.name$, тогда $R_3.name \subset R_1.name$.
-Также известно из определения \ref{def:join}, из условия выборки, что $R_1.version \leq R_2.version$ и $R_2.version \leq R_3.version$, что означает корректность выражения $R_1.version \leq R_3.version$.
-В итоге получается, что совпадают оба условия существования версионного соединения для $R_1$ и $R_2$, подтверждает теорему \ref{th:assoc}
-
-
+\indent Пусть есть $N$ отношений таких, что:
+\begin{eqnarray*}
+	R_1 & = & <name_1, version_1, ...> \\
+	R_2 & = & <FK(R_1, name_1), name_2, version_2, ...>\\
+	R_3 & = & <FK(R_2, name_2), name_3, version_3, ...>\\
+	&...&\\
+	R_N & = & <FK(R_{N-1}, name_{N-1}), version_N, ...>
+\end{eqnarray*}
+\indent Тогда, из теоремы \ref{th:assoc} следует, что первое условие существования версионного объединения никак не меняется и полностью зависит от $R_2$, которое в свою очередь каскадно зависит от последующих отношений.
+Второе условие, по причине того, что в результирующем версионном объединении в качестве версии будет выбрано самое последнее значение, то есть $R_N.version_N$, соответственно если взять $N = 3$, то получится уже доказанная теорема, из чего следует, что теорема справедлива для $\forall N \in \mathbb{Z}$.
+% \todo{индукция}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \indent Здесь намеренно упущены пункты про чтение данных и что они должны соответствовать названным свойствам, потому как подразумевается, что когда не происходит никаких операций способных изменить данные (к которым относится чтение), то они остаются в согласованном состоянии.
+% \indent Так как отношения могут быть в том числе и пустыми, приравняем $R_1'$ и $R_2'$ пустому отношению, тогда выражение \ref{eq:notsbset} примет вид:
+% \todo{посмотреть по терминологии подходит ли название ассоциативности}
+
+
+
+% \indent Так как известно, что $R_2.name \subset R_1.name$, а $R_3.name \subset R_2.name$, тогда $R_3.name \subset R_1.name$.
+% Также известно из определения \ref{def:join}, из условия выборки, что $R_1.version \leq R_2.version$ и $R_2.version \leq R_3.version$, что означает корректность выражения $R_1.version \leq R_3.version$.
+% В итоге получается, что совпадают оба условия существования версионного соединения для $R_1$ и $R_3$, подтверждает теорему \ref{th:assoc}
+% \indent Из выражения \ref{eq:proof} видно, что в результате получается, что версионное соединение отношений не входит само в себя, что неверно.
+% Из этого следует что изначальное предположение оказалось неверным, а следовательно теорема \ref{th:th1} верна, что и требовалось доказать.
+% \indent Как было доказано, после применения операции версионного объединения есть возможность получить предыдущее состояние отношений, что отвечает требованиям консистентности, а так как получается, что единственная операция, которая может менять отношения консистентна, то можно говорить что и полученная база данных консистентна.
+% \indent Исходя из требований консистентности к разрабатываемой базе данных, то есть о двух и только двух определенных операциях: чтения и записи, и из того, что чтение не изменяет данных, а запись, как было доказано позволяет получить 
 % \indent Формула \ref{eq:versJoin} отражает эквивалентность ``версионного соединения'' и связанных по условию отношений $R_1$ и $R_2$.
 % То есть для версионного соединения должны выполняться два условия:
 % \begin{itemize}
-% 	\item внешний ключ $R_2.name$ второго отношения существует в домене $R_1.name$;
-% 	\item версия указанная во втором отношении не меньше версии указанной в первом.
+	% 	\item внешний ключ $R_2.name$ второго отношения существует в домене $R_1.name$;
+	% 	\item версия указанная во втором отношении не меньше версии указанной в первом.
 % \end{itemize}
 
 % \indent При их соблюдении возможно применять свойство следующее из определения версионного соединения:
@@ -190,6 +270,6 @@
 		
 % \end{equation}
 
-\todo[inline]{Доказать}
+% \todo[inline]{Доказать}
 % \to\do[inline]{монотонность версий}
-\todo[inline]{оформить свойства и определение}
+% \todo[inline]{оформить свойства и определение}

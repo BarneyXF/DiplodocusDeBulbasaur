@@ -1,5 +1,5 @@
 \renewcommand\appendixname{Приложение~В}
-\chapter*{~~Модуль отображения логического времени на физическое}\label{chap:b}
+\chapter*{~~}\label{chap:b}
 \addcontentsline{toc}{chapter}{\appendixname~~Модуль отображения логического времени на физическое}
 
 Листинг~\ref{lst:time} содержит функцию для запуска отображения логического времени на физическое. Также определяет в зависимости от знака поданного логического времени какой расчет будет запущен.
@@ -52,6 +52,7 @@
 				curOffset, curTime = interval.appendIntervalDur(curTime, curOffset, curDay, isReverted)
 				if curOffset >= logicalTime {
 					curTime = appendTime(curTime, logicalTime-curOffset, isReverted)
+					
 					if !isLeftFound {
 						first = curTime
 						curOffset = logicalTime
